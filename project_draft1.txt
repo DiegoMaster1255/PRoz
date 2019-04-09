@@ -1,0 +1,74 @@
+﻿Slave-lotniskowiec:
+	tablica miejsc na samoloty, //[0,0,0,0,0,...,n] dla n samolotów,0 oznacza,
+		 że samolot nie potrzebuje pasa na,numer to priorytet samolotu do zajęcia pasa
+	zmienna pas zajęty/wolny (?)
+	->priorytet_l - im mniejszy tym wyższy (1 uzyska dostęp prędzej niż 2 czy 3 na tym lotniskowcu)
+	->zajęte miejsca(ilość)
+	
+	!! TO DO !! zależnie od zmian w slave-samolot, tutaj aktualizować kolejne wiadomości itp.
+	cały (niezajęty) czas nasłuchuje na wszystkie inne wiadomości:
+		Jeśli otrzyma wiadomość (lądowanie/startowanie):
+		->priorytet_l = max(tablica priorytetów) + 1
+		->Jeśli priorytet_l <= liczbie miejsc:
+		->	ustaw tablice[nr_samolotu] na priorytet
+		->Wpp:
+		->	priorytet_l = priorytet_l - 1    (poprzednia wartość <= liczby miejsc, żeby nie doszło do przepełnienia)
+			
+		Jeśli MSG_LANDING, to:
+			Jeśli (wolne miejsce w hangarze) i (wolny pas) i (->priorytet samolotu == 1):
+				blokuje pas startowy
+				odsyła MSG_LANDING_PERMIT
+			Jeśli nie:
+				odsyła MSG_LANDING_REFUSED
+		Jeśli MSG_TAKE_OFF, to:
+			Jeśli (wolny pas) i (->priorytet samolotu == 1):
+				blokuje pas startowy
+				odsyła MSG_TAKE_OFF_PERMIT
+			Jeśli nie:
+				odsyła MSG_TAKE_OFF_REFUSED
+		Jeśli MSG_LANDING_FINISHED, to:
+			odblokowuje pas startowy
+			->zwiększa zajęte miejsca
+			->'zmniejsza' wartość priorytetów o 1 w tablicy
+			dodaje id samolotu do tablicy miejsc zajętych
+		Jeśli MSG_TAKE_OFF_FINISHED, to:
+			odblokowuje pas startowy
+			->zmniejsza zajęte miejsca
+			->'zmniejsza' wartość priorytetów o 1 w tablicy
+			usuwa id samolotu z tablicy miejsc zajętych
+			
+Slave-samolot:
+	zmienna stan (na lotniskowcu / w powietrzu)
+	tablica lotniskowców
+	
+	Jeśli w powietrzu:
+		wykonuje sekcję lokalną (np. patrol zajmujący rand()% 10 sekund)
+		Dla każdego lotniskowca w tablicy (pojedynczo):
+			wysyła MSG_LANDING
+			nasłuchuje na odpowiedź:
+				Jeśli MSG_LANDING_PERMIT:
+					wykonuje procedurę landing() (np. sleep(rand()%3)
+					zmienia stan na 'na lotniskowcu'
+					odsyła wiadomość MSG_LANDING_FINISHED
+					wychodzi z pętli
+				Jeśli MSG_LANDING_REFUSED albo time_out:
+					continue
+		Jeśli jest w powietrzu (co oznacza, że otrzymał MSG_LANDING_REFUSED albo time_out od wszystkich lotniskowców):
+			!! TO DO !! tutaj implementacja jakiejś sensownej kolejki FIFO, może poprzez stworzenie grupy LANDING_QUEUE?
+			!! wtedy też konieczna modyfikacja, by po wykonaniu sekcji lokalnej sprawdził, czy istnieje już kolejka, jeśli tak, to od razu dołącza, a nie próbuje lądować
+	Jeśli na lotniskowcu:
+		wykonuje sekcję lokalną (np. tankowanie, mycie itd. zajmujące rand()% 4 sekundy
+		wysyła do swojego lotniskowca MSG_TAKE_OFF
+		!! TO DO !! zależnie od implementacji kolejki czy innego rozwiązania przy lądowaniu, tutaj też by wypadało jakoś zapewnić, że nie będzie deadlocka, najlepiej z wyższym
+		!! priorytetem niż lądowanie (bo zwolnienie miejsca na lotniskowcu jest cenniejsze niż zajęcie go)
+		w pętli ciągłej:
+			oczekuje na odpowiedź
+			Jeśli MSG_TAKE_OFF_PERMIT:
+				wykonuje procedurę take_off (np. sleep(rand()%2))
+				zmienia stan na (w powietrzu)
+				odsyła wiadomość MSG_TAKE_OFF_FINISHED
+				wychodzi z pętli
+			Jeśli MSG_TAKE_OFF_REFUSED:
+			!! TO DO !! tutaj tak jak wyżej, zrobić to na sensowne
+				odczekuje rand() % temp czasu
+				ponownie wysyła MSG_TAKE_OFF

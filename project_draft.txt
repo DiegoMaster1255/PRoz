@@ -1,12 +1,12 @@
 Slave-lotniskowiec:
 	tablica miejsc na samoloty,
 	zmienna pas zajęty/wolny (?)
-	
+	zmienna take_off_required
 	
 	!! TO DO !! zależnie od zmian w slave-samolot, tutaj aktualizować kolejne wiadomości itp.
 	cały (niezajęty) czas nasłuchuje na wszystkie inne wiadomości:
 		Jeśli MSG_LANDING, to:
-			Jeśli wolne miejsce w hangarze i wolny pas:
+			Jeśli wolne miejsce w hangarze i wolny pas i take_off_required == False:
 				blokuje pas startowy
 				odsyła MSG_LANDING_PERMIT
 			Jeśli nie:
@@ -16,6 +16,7 @@ Slave-lotniskowiec:
 				blokuje pas startowy
 				odsyła MSG_TAKE_OFF_PERMIT
 			Jeśli nie:
+				ustawia take_off_required na True
 				odsyła MSG_TAKE_OFF_REFUSED
 		Jeśli MSG_LANDING_FINISHED, to:
 			odblokowuje pas startowy
@@ -23,11 +24,26 @@ Slave-lotniskowiec:
 		Jeśli MSG_TAKE_OFF_FINISHED, to:
 			odblokowuje pas startowy
 			usuwa id samolotu z tablicy miejsc zajętych
+			ustawia take_off_required na True
 			
 Slave-samolot:
-	zmienna stan (na lotniskowcu / w powietrzu)
+	zmienna stan (na lotniskowcu / w powietrzu / w kolejce)
 	tablica lotniskowców
+	tablica kolejki
 	
+	Jeśli w kolejce:
+		Jeśli pierwszy w kolejce:
+			okresowo wykonuje rutynę próby lądowania ( z "Jeśli w powietrzu")
+			przed odesłaniem MSG_LANDING_FINISHED usuwa się z kolejki i wysyła członkom grupy MSG_QUEUE, po czym wychodzi z grupy
+		Jeśli nie:
+			Nasłuchuje na nadchodzące wiadomości
+			Jeśli MSG_QUEUE:
+				nadpisuje swoją kolejkę nowo otrzymaną kolejką
+			Jeśli MSG_REQUEST_QUEUE:
+				wysyła swoją kolejkę do nadawcy MSG_REQUEST_QUEUE
+				dodaje nadawcę MSG_REQUEST_QUEUE na koniec kolejki
+			!! tutaj miejsce na ewentualne implementacje nowych funkcji dla samolotów w kolejce, np. wyjście z kolejki 
+			!! i "gotowość bojowa" w przypadku MSG_ALERT itp.
 	Jeśli w powietrzu:
 		wykonuje sekcję lokalną (np. patrol zajmujący rand()% 10 sekund)
 		Dla każdego lotniskowca w tablicy (pojedynczo):
@@ -43,6 +59,13 @@ Slave-samolot:
 		Jeśli jest w powietrzu (co oznacza, że otrzymał MSG_LANDING_REFUSED albo time_out od wszystkich lotniskowców):
 			!! TO DO !! tutaj implementacja jakiejś sensownej kolejki FIFO, może poprzez stworzenie grupy LANDING_QUEUE?
 			!! wtedy też konieczna modyfikacja, by po wykonaniu sekcji lokalnej sprawdził, czy istnieje już kolejka, jeśli tak, to od razu dołącza, a nie próbuje lądować
+			Dołącza do grupy LANDING_QUEUE
+			Jeśli nie ma innych członków:
+				dodaje swoje id na pierwsze miejsce w tablicy
+			Jeśli są:
+				wysyła MSG_REQUEST_QUEUE do grupy
+				oczekuje na MSG_QUEUE
+				nadpisuje swoją kolejkę otrzymaną kolejką i dodaje się na koniec
 	Jeśli na lotniskowcu:
 		wykonuje sekcję lokalną (np. tankowanie, mycie itd. zajmujące rand()% 4 sekundy
 		wysyła do swojego lotniskowca MSG_TAKE_OFF

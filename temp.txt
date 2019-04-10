@@ -1,0 +1,21 @@
+Cztery stany:
+  - w powietrzu
+  - na pasie
+  - na lotniskowcu
+  - w kolejce
+
+
+1. Sekcja lokalna
+2. Samolot pyta o stan wszystkie samoloty
+3. Oczekuje na odpowiedzi od wszystkich
+  - Stany "w powietrzu" zostają "zignorowane"
+  - Stany "na pasie", "na lotniskowcu", "w kolejce" są zliczane do własnych zmiennych
+4. Jeśli samolotów w kolejce > 0:
+  4a. Zmień stan na "w kolejce"
+  4b. Ustaw miejsce w kolejce na ilość samolotów w kolejce
+4. Jeśli ilość na pasie < ilości pasów:
+  4a. Jeśli ilość na lotniskowcu < ilości miejsc:
+    4aa. Zmień stan na "na pasie"
+    4ab. Sekcja krytyczna
+    4ac. Zmień stan na "na lotniskowcu"
+  4b. J

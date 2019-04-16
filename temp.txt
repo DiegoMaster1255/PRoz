@@ -1,4 +1,9 @@
-Algorytm bazuje na stanach, w jakich są aktualnie samoloty oraz komunikacji między nimi. Wykorzystane są dwie kolejki - do lądowania i do startu, przy czym kolejka do startu jest traktowana jako priorytetowa względem tej do lądowania ("cenniejsze" jest zwolnienie miejsca na lotniskowcu, niż zajęcie kolejnego). Każdy samolot będzie działał ciągle na co najmniej dwóch wątkach - główny odpowiedzialny będzie za wykonywanie algorytmu, a drugi za odbieranie przychodzących wiadomości. (?) W przypadku konieczności odpowiedzi na otrzymaną wiadomość, uruchamiane zostaną nowe wątki odpowiedzialne tylko za to zadanie, by zminimalizować możliwość desynchronizacji.
+Algorytm bazuje na stanach, w jakich są aktualnie samoloty oraz komunikacji między nimi. Wykorzystane są dwie kolejki - do lądowania
+i do startu, przy czym kolejka do startu jest traktowana jako priorytetowa względem tej do lądowania ("cenniejsze" jest zwolnienie
+miejsca na lotniskowcu, niż zajęcie kolejnego). Każdy samolot będzie działał ciągle na co najmniej dwóch wątkach - główny odpowiedzialny
+będzie za wykonywanie algorytmu, a drugi za odbieranie przychodzących wiadomości. 
+(?) W przypadku konieczności odpowiedzi na otrzymaną wiadomość, uruchamiane zostaną nowe wątki odpowiedzialne tylko za to zadanie,
+by zminimalizować możliwość desynchronizacji.
 
 
 Pięć stanów:
